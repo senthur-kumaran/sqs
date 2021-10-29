@@ -1,0 +1,49 @@
+service: sqs
+frameworkVersion: '2'
+
+custom:
+  settings:
+    ACCOUNT_ID: 281742839611
+    CONSELOR_QUEUE: "MyQueue"
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  stage: dev
+  region: ap-southeast-1
+  environment: ${self:custom.settings}
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource: '*'
+    - Effect: "Allow"
+      Action:
+        - "SQS:SendMessage"
+      Resource: "*"
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          method: get
+          path: hello
+  sqsHello:
+    handler: handler.sqsHello
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - MyQueue
+              - Arn
+          batchSize: 1
+
+resources:
+  Resources:
+    MyQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: ${self:custom.settings.CONSELOR_QUEUE}
